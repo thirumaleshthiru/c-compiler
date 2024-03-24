@@ -7,7 +7,7 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
-def compile_and_run_c_code(code):
+def compile_and_run_c_code(code, input_data=None):
     try:
         # Redirect stdout to capture the output
         sys.stdout = result_output = StringIO()
@@ -21,7 +21,11 @@ def compile_and_run_c_code(code):
         
         if compile_process.returncode == 0:
             # If compilation is successful, execute the compiled program
-            execution_process = subprocess.run(['./temp'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if input_data:
+                execution_process = subprocess.run(['./temp'], input=input_data.encode(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            else:
+                execution_process = subprocess.run(['./temp'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                
             output_text = execution_process.stdout.decode('utf-8')
             return {'success': True, 'output': output_text}
         else:
@@ -41,10 +45,11 @@ def compile_and_run_c_code(code):
 def compile_run_c():
     data = request.json
     code = data.get('code')
+    input_data = data.get('input')
 
     if code:
         # Call the function to compile and run the provided C code
-        result = compile_and_run_c_code(code)
+        result = compile_and_run_c_code(code, input_data)
         return jsonify(result)
     else:
         return jsonify({'success': False, 'error': 'No code provided.'})
